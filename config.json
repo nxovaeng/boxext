@@ -1,0 +1,59 @@
+{
+  "sources": [
+    {
+      "name": "qist-jsm",
+      "url": "https://qist.wyfc.qzz.io/jsm.json",
+      "description": "qist jsm 配置",
+      "enabled": true
+    },
+    {
+      "name": "qist-xiaosa",
+      "url": "https://raw.githubusercontent.com/qist/tvbox/refs/heads/master/xiaosa/api.json",
+      "description": "qist xiaosa API 配置",
+      "enabled": true
+    },
+    {
+      "name": "cluntop-box",
+      "url": "https://clun.top/box.json",
+      "description": "cluntop box 配置",
+      "enabled": true
+    }
+  ],
+  "local_sources": [
+    {
+      "name": "qist-js-local",
+      "path": "../qist-tvbox/js.json",
+      "description": "qist 本地 js 配置",
+      "enabled": false
+    },
+    {
+      "name": "cluntop-box-local",
+      "path": "../cluntop-tvbox/box.json",
+      "description": "cluntop 本地 box 配置",
+      "enabled": false
+    }
+  ],
+  "validation": {
+    "timeout": 15,
+    "max_workers": 15,
+    "retry_times": 2,
+    "download_resources": true,
+    "deep_check": true
+  },
+  "output": {
+    "reports_dir": "reports",
+    "validated_dir": "validated_configs",
+    "download_dir": "downloaded_resources",
+    "formats": {
+      "text": true,
+      "json": true,
+      "html": true
+    }
+  },
+  "github_pages": {
+    "enabled": true,
+    "generate_index": true,
+    "title": "TvBox 播放源检测报告",
+    "description": "自动化检测报告"
+  }
+}

@@ -1,0 +1,51 @@
+name: TVBox CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  schedule:
+    - cron: '0 0 * * *'  # Run daily
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v3
+      with:
+        python-version: "3.10"
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+    - name: Validate Configs
+      run: |
+        python unified_manager.py validate --output smart_output
+
+    - name: Security Scan
+      run: |
+        # Download plugins first (implicit in validate or build)
+        # We run build to get all assets for scanning
+        python unified_manager.py build
+        python unified_manager.py scan
+
+    - name: Prepare Deployment
+      run: |
+        mkdir -p publish_ready/merged
+        if [ -d "smart_output/merged" ]; then
+          cp -r smart_output/merged/* publish_ready/merged/
+        fi
+
+    - name: Deploy to GitHub Pages
+      if: github.ref == 'refs/heads/main' && hashFiles('publish_ready/merged/config.json') != ''
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./publish_ready/merged
