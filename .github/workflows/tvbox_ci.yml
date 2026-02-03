@@ -29,15 +29,36 @@ jobs:
       run: |
         python unified_manager.py build --output smart_output
 
-    - name: Copy custom
+    - name: Prepare publish directory
       run: |
+        mkdir -p publish
+        # 复制 smart_output/merged 如果存在
         if [ -d "smart_output/merged" ]; then
-          cp -r custom/* smart_output/merged/
+          cp -r smart_output/merged/* publish/
+        fi
+        # 复制 custom 目录内容
+        if [ -d "custom" ]; then
+          cp -r custom/* publish/
+        fi
+        # 列出发布内容
+        echo "=== Publish directory contents ==="
+        ls -la publish/
+
+    - name: Check publish directory
+      id: check_publish
+      run: |
+        if [ -d "publish" ] && [ "$(ls -A publish)" ]; then
+          echo "has_content=true" >> $GITHUB_OUTPUT
+        else
+          echo "has_content=false" >> $GITHUB_OUTPUT
         fi
 
     - name: Deploy to GitHub Pages
-      if: github.ref == 'refs/heads/main' && hashFiles('smart_output/merged/config.json') != ''
+      if: github.ref == 'refs/heads/main' && steps.check_publish.outputs.has_content == 'true'
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./smart_output/merged
+        publish_dir: ./publish
+        publish_branch: gh-pages
+        force_orphan: true
+        cname: box.zro.qzz.io
