@@ -1,0 +1,50 @@
+site_name: TVBox 资源配置
+site_description: TVBox 配置文件管理与资源聚合
+site_url: https://box.zro.qzz.io
+docs_dir: docs
+site_dir: docs_build
+
+theme:
+  name: material
+  language: zh
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: 切换到深色模式
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: 切换到浅色模式
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.sections
+    - navigation.expand
+    - toc.follow
+    - content.code.copy
+
+plugins:
+  - search:
+      lang: zh
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - pymdownx.inlinehilite
+  - admonition
+  - pymdownx.details
+  - tables
+  - toc:
+      permalink: true
+
+nav:
+  - 首页: index.md
+  - 使用手册: MANUAL.md
+  - DRPY代理指南: DRPY_PROXY_GUIDE.md
+  - 配置分析: box_analysis.md

@@ -32,6 +32,14 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        # 安装 mkdocs 及主题
+        pip install mkdocs mkdocs-material pymdown-extensions
+
+    - name: Build documentation
+      run: |
+        mkdocs build --strict
+        echo "=== Docs build contents ==="
+        ls -la docs_build/
 
     - name: Validate scan and build
       run: |
@@ -52,9 +60,18 @@ jobs:
         if [ -d "custom" ]; then
           cp -r custom/* publish/
         fi
+        # 复制 mkdocs 构建的文档
+        if [ -d "docs_build" ]; then
+          mkdir -p publish/docs
+          cp -r docs_build/* publish/docs/
+        fi
+        # 确保 .nojekyll 存在
+        touch publish/.nojekyll
         # 列出发布内容
         echo "=== Publish directory contents ==="
         ls -la publish/
+        echo "=== Docs directory ==="
+        ls -la publish/docs/ || echo "No docs directory"
 
     - name: Check publish directory
       id: check_publish
