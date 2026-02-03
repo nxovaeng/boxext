@@ -22,8 +22,8 @@
       "searchable": 1,
       "changeable": 1,
       "categories": [
+        "电影",
         "国产动漫",
-        "日韩动漫",
         "国产剧"
       ]
     },
@@ -37,8 +37,8 @@
       "searchable": 1,
       "changeable": 1,
       "categories": [
+        "电影片",
         "国产动漫",
-        "日韩动漫",
         "国产剧"
       ]
     },
@@ -46,13 +46,13 @@
       "key": "非凡",
       "name": "非凡采集",
       "type": 1,
-      "api": "https://cj.ffzyapi.com/api.php/provide/vod/?",
+      "api": "https://cj.ffzyapi.com/api.php/provide/vod/",
       "quickSearch": 1,
       "searchable": 1,
       "changeable": 1,
       "categories": [
+        "电影片",
         "国产动漫",
-        "日韩动漫",
         "国产剧"
       ]
     },
@@ -66,10 +66,9 @@
       "searchable": 1,
       "changeable": 1,
       "categories": [
+        "电影",
         "国产动漫",
-        "日韩动漫",
-        "国产剧",
-        "预告片"
+        "国产剧"
       ]
     },
     {
@@ -81,8 +80,8 @@
       "searchable": 1,
       "changeable": 1,
       "categories": [
+        "电影",
         "中国动漫",
-        "日本动漫",
         "内地剧"
       ]
     },
@@ -95,8 +94,8 @@
       "searchable": 1,
       "changeable": 1,
       "categories": [
+        "电影",
         "中国动漫",
-        "日本动漫",
         "大陆剧"
       ]
     },
@@ -110,8 +109,8 @@
       "searchable": 1,
       "changeable": 1,
       "categories": [
+        "电影",
         "国产动漫",
-        "日本动漫",
         "国产剧"
       ]
     },
@@ -119,28 +118,15 @@
       "key": "率率",
       "name": "影视 | 率率[直连]",
       "type": 1,
-      "api": "https://suoniapi.com/api.php/provide/vod/?ac=list",
+      "api": "https://suoniapi.com/api.php/provide/vod/",
       "searchable": 1,
       "quickSearch": 1,
       "changeable": 1,
       "categories": [
+        "电影",
         "国产剧",
-        "韩剧",
-        "日剧",
-        "港剧",
-        "台剧",
-        "动作片",
-        "喜剧片",
-        "爱情片",
         "科幻片",
-        "战争片",
-        "恐怖片",
-        "剧情片",
-        "国产动漫",
-        "日韩动漫",
-        "欧美动漫",
-        "大陆综艺",
-        "日韩综艺"
+        "国产动漫"
       ]
     },
     {
@@ -163,7 +149,6 @@
       "changeable": 1,
       "categories": [
         "国产动漫",
-        "日韩动漫",
         "国产剧"
       ]
     },
@@ -177,7 +162,6 @@
       "changeable": 1,
       "categories": [
         "国产动漫",
-        "日韩动漫",
         "国产剧"
       ]
     },
@@ -199,7 +183,7 @@
       "key": "天涯采集",
       "name": "影视 | 天涯",
       "type": 1,
-      "api": "http://tyyszy.com/api.php/provide/vod",
+      "api": "http://tyyszy.com/api.php/provide/vod/",
       "style": {
         "type": "rect",
         "ratio": 1.33
@@ -214,7 +198,7 @@
       "key": "建安采集",
       "name": "影视 | 建安",
       "type": 1,
-      "api": "http://154.219.117.232:9981/jacloudapi.php/provide/vod",
+      "api": "http://154.219.117.232:9981/jacloudapi.php/provide/vod/",
       "style": {
         "type": "rect",
         "ratio": 1.33
@@ -229,7 +213,7 @@
       "key": "金蝉采集",
       "name": "影视 | 金蝉",
       "type": 1,
-      "api": "https://zy.jinchancaiji.com/api.php/provide/vod",
+      "api": "https://zy.jinchancaiji.com/api.php/provide/vod/",
       "style": {
         "type": "rect",
         "ratio": 1.33
@@ -253,7 +237,7 @@
       "key": "卧龙资源",
       "name": "影视 | 卧龙资源[直连]",
       "type": 1,
-      "api": "https://wolongzyw.com/api.php/provide/vod/?ac=list",
+      "api": "https://wolongzyw.com/api.php/provide/vod/",
       "searchable": 1,
       "changeable": 1
     },
@@ -266,36 +250,21 @@
       "categories": [
         "动作片",
         "喜剧片",
-        "爱情片",
         "科幻片",
         "恐怖片",
         "剧情片",
-        "战争片",
         "国产剧",
         "香港剧",
         "台湾剧",
-        "韩国剧",
-        "纪录片",
         "动画片",
-        "日本剧",
-        "泰国剧",
-        "欧美剧",
-        "国产动漫",
-        "日本动漫",
-        "欧美动漫",
-        "海外动漫",
-        "电影解说",
-        "大陆综艺",
-        "港台综艺",
-        "日韩综艺",
-        "欧美综艺"
+        "国产动漫"
       ]
     },
     {
       "key": "U酷资源風",
       "name": "影视 | 尤酷[直连]",
       "type": 1,
-      "api": "https://api.ukuapi.com/api.php/provide/vod/?ac=list",
+      "api": "https://api.ukuapi.com/api.php/provide/vod/",
       "searchable": 1,
       "categories": [
         "综艺",
@@ -314,9 +283,7 @@
         "动漫电影",
         "台湾剧",
         "韩剧",
-        "泰剧",
         "记录片",
-        "短剧",
         "奇幻片",
         "犯罪片"
       ],
@@ -328,7 +295,7 @@
       "key": "360资源",
       "name": "影视 | 360资源[直连]",
       "type": 1,
-      "api": "https://360zy.com/api.php/provide/vod/?ac=list",
+      "api": "https://360zy.com/api.php/provide/vod/",
       "searchable": 1,
       "categories": [
         "动作片",
@@ -340,36 +307,10 @@
         "战争片",
         "国产剧",
         "香港剧",
-        "韩国剧",
-        "欧美剧",
-        "NBA",
-        "惊悚片",
-        "家庭篇",
-        "古装片",
-        "历史片",
         "悬疑片",
-        "犯罪片",
-        "灾难片",
-        "纪录片",
-        "短片",
         "动画片",
         "台湾剧",
-        "日本剧",
-        "海外剧",
-        "泰国剧",
-        "大陆综艺",
-        "港台综艺",
-        "日韩综艺",
-        "国产动漫",
-        "欧美动漫",
-        "日韩动漫",
-        "西部片",
-        "爽文短剧",
-        "现代都市",
-        "年代穿越",
-        "古装仙侠",
-        "女频恋爱",
-        "成长逆袭"
+        "国产动漫"
       ],
       "header": {
         "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 15_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1"
@@ -379,40 +320,14 @@
       "key": "极速资源",
       "name": "影视 | 极速[直连]",
       "type": 1,
-      "api": "https://jszyapi.com/api.php/provide/vod/?ac=list",
+      "api": "https://jszyapi.com/api.php/provide/vod/",
       "searchable": 1,
       "categories": [
-        "欧美剧",
-        "香港剧",
-        "韩剧",
-        "日剧",
-        "马泰剧",
         "动作片",
-        "爱情片",
-        "喜剧片",
-        "科幻片",
-        "恐怖片",
-        "剧情片",
-        "战争片",
-        "记录片",
-        "动漫",
         "内地剧",
-        "动画片",
         "中国动漫",
-        "日本动漫",
-        "欧美动漫",
-        "综艺",
-        "台湾剧",
-        "体育赛事",
-        "大陆综艺",
-        "日韩综艺",
-        "港台综艺",
-        "欧美综艺",
-        "灾难片",
         "悬疑片",
-        "犯罪片",
-        "奇幻片",
-        "短剧"
+        "奇幻片"
       ],
       "header": {
         "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 15_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1"
@@ -429,50 +344,32 @@
       "categories": [
         "电影",
         "动作片",
-        "喜剧片",
-        "爱情片",
         "科幻片",
-        "恐怖片",
         "剧情片",
-        "战争片",
         "惊悚片",
-        "犯罪片",
-        "冒险片",
         "动画片",
         "悬疑片",
-        "武侠片",
         "奇幻片",
-        "纪录片",
         "连续剧",
-        "其他片",
         "国产剧",
         "港台剧",
-        "欧美剧",
-        "日韩剧",
-        "其他剧",
-        "动漫",
-        "综艺"
+        "动漫"
       ]
     },
     {
       "key": "百度",
       "name": "百度",
       "type": 1,
-      "api": "https://api.apibdzy.com/api.php/provide/vod?ac=list",
+      "api": "https://api.apibdzy.com/api.php/provide/vod/",
       "searchable": 1,
       "filterable": 0,
       "categories": [
         "国产动漫",
-        "日韩动漫",
         "大陆剧",
-        "欧美剧",
-        "韩剧",
-        "日剧",
         "动作片",
         "喜剧片",
         "爱情片",
         "科幻片",
-        "恐怖片",
         "剧情片",
         "战争片"
       ],
@@ -484,7 +381,7 @@
       "key": "暴風",
       "name": "影视 | 暴風[直连]",
       "type": 1,
-      "api": "https://bfzyapi.com/api.php/provide/vod/?ac=list",
+      "api": "https://bfzyapi.com/api.php/provide/vod/",
       "searchable": 1,
       "changeable": 1
     }

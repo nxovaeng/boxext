@@ -6,7 +6,7 @@ on:
   pull_request:
     branches: [ "main" ]
   schedule:
-    - cron: '0 0 * * *'  # Run daily
+    - cron: '0 20 * * 3'
 
 jobs:
   build:
@@ -25,27 +25,19 @@ jobs:
         python -m pip install --upgrade pip
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
-    - name: Validate Configs
+    - name: Validate scan and build
       run: |
-        python unified_manager.py validate --output smart_output
+        python unified_manager.py build --output smart_output
 
-    - name: Security Scan
+    - name: Copy custom
       run: |
-        # Download plugins first (implicit in validate or build)
-        # We run build to get all assets for scanning
-        python unified_manager.py build
-        python unified_manager.py scan
-
-    - name: Prepare Deployment
-      run: |
-        mkdir -p publish_ready/merged
         if [ -d "smart_output/merged" ]; then
-          cp -r smart_output/merged/* publish_ready/merged/
+          cp -r custom/* smart_output/merged/
         fi
 
     - name: Deploy to GitHub Pages
-      if: github.ref == 'refs/heads/main' && hashFiles('publish_ready/merged/config.json') != ''
+      if: github.ref == 'refs/heads/main' && hashFiles('smart_output/merged/config.json') != ''
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./publish_ready/merged
+        publish_dir: ./smart_output/merged

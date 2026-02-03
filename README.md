@@ -33,7 +33,7 @@ python3 unified_manager.py validate --url https://example.com/config.json
 python3 unified_manager.py build
 ```
 
-**输出目录**: `publish_ready/merged/` (请部署此文件夹的内容)
+**输出目录**: `smart_output/merged/` (请部署此文件夹的内容)
 
 ### 3. 生成高级配置 (Premium)
 生成包含去广告、DNS 优化和精选源的高质量配置。

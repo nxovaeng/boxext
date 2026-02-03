@@ -35,15 +35,15 @@ python3 unified_manager.py validate --url https://raw.githubusercontent.com/user
 python3 unified_manager.py build
 ```
 
-**输出目录**: `publish_ready/merged/`
+**输出目录**: `smart_output/merged/`
 
 **如何使用:**
-1.  将 `publish_ready/merged/` 目录上传到您的 Web 服务器、CDN 或 GitHub Pages。
+1.  将 `smart_output/merged/` 目录上传到您的 Web 服务器、CDN 或 GitHub Pages。
 2.  在 TVBox 中输入该地址即可使用。
 
 **本地测试:**
 ```bash
-cd publish_ready/merged
+cd smart_output/merged
 python3 -m http.server 8000
 # 访问 http://localhost:8000/config.json
 ```
