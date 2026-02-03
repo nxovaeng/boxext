@@ -1,10 +1,18 @@
 name: TVBox CI
 
 on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+  # 手动触发
+  workflow_dispatch:
+    inputs:
+      max_sites:
+        description: '最大站点数量'
+        required: false
+        default: '100'
+      min_score:
+        description: '最低质量分数'
+        required: false
+        default: '30'
+  # 定时触发（每周三 UTC 20:00 = 北京时间周四 04:00）
   schedule:
     - cron: '0 20 * * 3'
 
@@ -27,7 +35,11 @@ jobs:
 
     - name: Validate scan and build
       run: |
-        python unified_manager.py build --output smart_output
+        # 使用智能筛选构建，支持手动输入参数
+        MAX_SITES="${{ github.event.inputs.max_sites || '100' }}"
+        MIN_SCORE="${{ github.event.inputs.min_score || '30' }}"
+        echo "构建参数: max_sites=$MAX_SITES, min_score=$MIN_SCORE"
+        python unified_manager.py build --output smart_output --max-sites $MAX_SITES --min-score $MIN_SCORE
 
     - name: Prepare publish directory
       run: |

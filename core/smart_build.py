@@ -3,12 +3,14 @@
 智能构建系统 - 完整流程
 1. 从 config.json 读取在线源列表
 2. 逐个验证和下载
-3. 合并有效配置
-4. 生成可部署的 publish 目录
+3. 智能筛选高质量站点
+4. 合并有效配置
+5. 生成可部署的 publish 目录
 """
 import json
 from pathlib import Path
 from .smart_validator import SmartValidator
+from .filter_quality_sites import rate_site
 import sys
 
 def load_source_config(config_path: str = "config.json") -> dict:
@@ -16,7 +18,8 @@ def load_source_config(config_path: str = "config.json") -> dict:
     with open(config_path, 'r', encoding='utf-8') as f:
         return json.load(f)
 
-def smart_build(config_path: str = "config.json", output_dir: str = "smart_output"):
+def smart_build(config_path: str = "config.json", output_dir: str = "smart_output",
+                max_sites: int = 100, min_score: int = 30, skip_plugins: bool = False):
     """智能构建流程
     
     Args:
@@ -107,8 +110,45 @@ def smart_build(config_path: str = "config.json", output_dir: str = "smart_outpu
                 if isinstance(live, dict):
                     all_lives.append(live)
     
+    # 3.5 智能筛选高质量站点
+    print(f"\n步骤 3: 智能筛选站点...")
+    print(f"  原始站点数: {len(all_valid_sites)}")
+    
+    # 对所有站点评分
+    rated_sites = []
+    for site in all_valid_sites:
+        rating = rate_site(site, allow_cloud=False)
+        rated_sites.append({
+            'site': site,
+            'score': rating['score'],
+            'reasons': rating['reasons'],
+            'category': rating['category']
+        })
+    
+    # 按分数排序
+    rated_sites.sort(key=lambda x: x['score'], reverse=True)
+    
+    # 筛选高分站点
+    filtered_sites = [
+        rs['site'] for rs in rated_sites
+        if rs['score'] >= min_score
+    ][:max_sites]
+    
+    # 统计筛选结果
+    category_stats = {}
+    for rs in rated_sites[:max_sites]:
+        cat = rs['category']
+        category_stats[cat] = category_stats.get(cat, 0) + 1
+    
+    print(f"  筛选后站点数: {len(filtered_sites)} (最低分: {min_score}, 最多: {max_sites})")
+    for cat, count in category_stats.items():
+        print(f"    - {cat}: {count}")
+    
+    # 使用筛选后的站点
+    all_valid_sites = filtered_sites
+    
     # 4. 生成合并配置
-    print(f"\n步骤 3: 生成合并配置...")
+    print(f"\n步骤 4: 生成合并配置...")
     
     # Helper function to normalize plugin paths
     def normalize_plugin_path(path):
@@ -191,45 +231,49 @@ def smart_build(config_path: str = "config.json", output_dir: str = "smart_outpu
     print(f"  - 直播源: {len(all_lives)}")
     
     # 5. 复制插件文件到合并目录
-    print(f"\n步骤 4: 整理插件文件...")
-    
-    (merged_dir / 'js').mkdir(exist_ok=True)
-    (merged_dir / 'py').mkdir(exist_ok=True)
-    (merged_dir / 'jar').mkdir(exist_ok=True)
-    
     total_files = 0
-    for source_report in source_reports:
-        source_name = source_report['name']
-        source_dir = output_base / source_name / 'plugins'
+    
+    if skip_plugins:
+        print(f"\n步骤 5: 跳过插件整理 (--skip-plugins)")
+    else:
+        print(f"\n步骤 5: 整理插件文件...")
         
-        if source_dir.exists():
-            # 复制 JS 文件
-            for js_file in source_dir.glob('*.js'):
-                dest = merged_dir / 'js' / js_file.name
-                if not dest.exists():
-                    import shutil
-                    shutil.copy2(js_file, dest)
-                    total_files += 1
+        (merged_dir / 'js').mkdir(exist_ok=True)
+        (merged_dir / 'py').mkdir(exist_ok=True)
+        (merged_dir / 'jar').mkdir(exist_ok=True)
+        
+        for source_report in source_reports:
+            source_name = source_report['name']
+            source_dir = output_base / source_name / 'plugins'
             
-            # 复制 Python 文件
-            for py_file in source_dir.glob('*.py'):
-                dest = merged_dir / 'py' / py_file.name
-                if not dest.exists():
-                    import shutil
-                    shutil.copy2(py_file, dest)
-                    total_files += 1
-            
-            # 复制 JAR 文件
-            jar_dir = source_dir / 'jar'
-            if jar_dir.exists():
-                for jar_file in jar_dir.glob('*.jar'):
-                    dest = merged_dir / 'jar' / jar_file.name
+            if source_dir.exists():
+                # 复制 JS 文件
+                for js_file in source_dir.glob('*.js'):
+                    dest = merged_dir / 'js' / js_file.name
                     if not dest.exists():
                         import shutil
-                        shutil.copy2(jar_file, dest)
+                        shutil.copy2(js_file, dest)
                         total_files += 1
-    
-    print(f"  ✓ 已整理 {total_files} 个插件文件")
+                
+                # 复制 Python 文件
+                for py_file in source_dir.glob('*.py'):
+                    dest = merged_dir / 'py' / py_file.name
+                    if not dest.exists():
+                        import shutil
+                        shutil.copy2(py_file, dest)
+                        total_files += 1
+                
+                # 复制 JAR 文件
+                jar_dir = source_dir / 'jar'
+                if jar_dir.exists():
+                    for jar_file in jar_dir.glob('*.jar'):
+                        dest = merged_dir / 'jar' / jar_file.name
+                        if not dest.exists():
+                            import shutil
+                            shutil.copy2(jar_file, dest)
+                            total_files += 1
+        
+        print(f"  ✓ 已整理 {total_files} 个插件文件")
     
     # 6. 生成总报告
     print(f"\n步骤 5: 生成总报告...")

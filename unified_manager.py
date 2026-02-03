@@ -102,17 +102,29 @@ def cmd_build(args):
     output_dir = args.output if hasattr(args, 'output') and args.output else "smart_output"
     include_cloud = args.include_cloud if hasattr(args, 'include_cloud') else False
     init_custom = args.init_custom if hasattr(args, 'init_custom') else False
+    max_sites = args.max_sites if hasattr(args, 'max_sites') and args.max_sites else 100
+    min_score = args.min_score if hasattr(args, 'min_score') and args.min_score else 30
+    skip_plugins = args.skip_plugins if hasattr(args, 'skip_plugins') else False
     
     print(f"Config: {config_path}")
     print(f"Output: {output_dir}")
+    print(f"Max Sites: {max_sites}")
+    print(f"Min Score: {min_score}")
+    print(f"Skip Plugins: {skip_plugins}")
     print(f"Include Cloud: {include_cloud}")
     if init_custom:
         print(f"Init Custom: ✓ (将初始化 custom/ 目录)")
     print()
     
     try:
-        # Step 1: Build and validate
-        ret_code = smart_build(config_path=config_path, output_dir=output_dir)
+        # Step 1: Build and validate with smart filtering
+        ret_code = smart_build(
+            config_path=config_path,
+            output_dir=output_dir,
+            max_sites=max_sites,
+            min_score=min_score,
+            skip_plugins=skip_plugins
+        )
         if ret_code != 0:
             sys.exit(ret_code)
         
@@ -413,6 +425,9 @@ def main():
     parser_build = subparsers.add_parser('build', help='Build deployment package from online sources')
     parser_build.add_argument('--config', help='Path to source config file (default: config.json)')
     parser_build.add_argument('--output', default='smart_output', help='Output directory (default: smart_output)')
+    parser_build.add_argument('--max-sites', type=int, default=100, help='Maximum number of sites to include (default: 100)')
+    parser_build.add_argument('--min-score', type=int, default=30, help='Minimum quality score for sites (default: 30)')
+    parser_build.add_argument('--skip-plugins', action='store_true', help='Skip plugin download (faster build)')
     parser_build.add_argument('--include-cloud', action='store_true', help='Include Cloud/Pan sites in merged config')
     parser_build.add_argument('--init-custom', action='store_true', help='Initialize custom/ with API sites and premium config')
     
