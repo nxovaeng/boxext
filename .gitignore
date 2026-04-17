@@ -1,0 +1,76 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+ENV/
+env/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment Variables
+config/.env
+.env
+
+# Logs
+*.log
+logs/
+*.log.*
+
+# Generated Configs
+generated_configs/
+data/
+
+# Test Coverage
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Backup Files
+*.backup
+*.bak
+*.old
+
+# Temporary Files
+tmp/
+temp/
+*.tmp
+
+# OS Files
+Thumbs.db
+.DS_Store
+
+# Old Structure (可选，如果你想保留旧文件)
+# mcp-server/
+
+# Compiled Files
+*.pyc
+*.pyo
+
+*output/

@@ -101,29 +101,18 @@ def cmd_build(args):
     config_path = args.config if hasattr(args, 'config') and args.config else "config.json"
     output_dir = args.output if hasattr(args, 'output') and args.output else "smart_output"
     include_cloud = args.include_cloud if hasattr(args, 'include_cloud') else False
-    init_custom = args.init_custom if hasattr(args, 'init_custom') else False
-    max_sites = args.max_sites if hasattr(args, 'max_sites') and args.max_sites else 100
-    min_score = args.min_score if hasattr(args, 'min_score') and args.min_score else 30
-    skip_plugins = args.skip_plugins if hasattr(args, 'skip_plugins') else False
     
     print(f"Config: {config_path}")
     print(f"Output: {output_dir}")
-    print(f"Max Sites: {max_sites}")
-    print(f"Min Score: {min_score}")
-    print(f"Skip Plugins: {skip_plugins}")
     print(f"Include Cloud: {include_cloud}")
-    if init_custom:
-        print(f"Init Custom: ✓ (将初始化 custom/ 目录)")
     print()
     
     try:
-        # Step 1: Build and validate with smart filtering
+        # Step 1: Build and validate with per-source extraction
         ret_code = smart_build(
             config_path=config_path,
             output_dir=output_dir,
-            max_sites=max_sites,
-            min_score=min_score,
-            skip_plugins=skip_plugins
+            exclude_cloud=not include_cloud
         )
         if ret_code != 0:
             sys.exit(ret_code)
@@ -161,124 +150,7 @@ def cmd_build(args):
             for issue in issues[:10]:  # Show first 10
                 print(f"    [{issue['type']}] {Path(issue['file']).name}:{issue['line']} - {issue['message']}")
         
-        # Step 2: Create filtered versions
-        merged_dir = Path(output_dir) / 'merged'
-        merged_config_path = merged_dir / 'config.json'
-        
-        if merged_config_path.exists():
-            print("\n" + "=" * 60)
-            print("Step: Creating filtered configs...")
-            print("=" * 60)
-            
-            with open(merged_config_path, 'r', encoding='utf-8') as f:
-                merged_config = json.load(f)
-            
-            all_sites = merged_config.get('sites', [])
-            
-            # Filter API-only sites (type=1 or csp_ without cloud patterns)
-            api_sites = []
-            full_sites = []
-            
-            cloud_patterns = ['Pan', 'Share', 'Wogg', 'Wobg', 'Moli', '阿里', '夸克', '网盘', 'alist']
-            
-            for site in all_sites:
-                api = site.get('api', '')
-                name = site.get('name', '')
-                site_type = site.get('type', 0)
-                
-                # Check if it's a cloud/pan site
-                is_cloud = False
-                for pattern in cloud_patterns:
-                    if pattern.lower() in api.lower() or pattern.lower() in name.lower():
-                        is_cloud = True
-                        break
-                
-                # API-only: type=1 (CMS API) or csp_ without cloud
-                if site_type == 1 or (api.startswith('csp_') and not is_cloud):
-                    api_sites.append(site)
-                
-                # Full sites: include everything (or filter cloud if not --include-cloud)
-                if include_cloud or not is_cloud:
-                    full_sites.append(site)
-            
-            # Create api-only config
-            api_config = merged_config.copy()
-            api_config['sites'] = api_sites
-            
-            api_dir = Path(output_dir) / 'api_only'
-            api_dir.mkdir(exist_ok=True)
-            with open(api_dir / 'config.json', 'w', encoding='utf-8') as f:
-                json.dump(api_config, f, ensure_ascii=False, indent=2)
-            
-            print(f"  ✓ API-only config: {api_dir}/config.json ({len(api_sites)} sites)")
-            
-            # Update merged config with filtered sites
-            if not include_cloud:
-                merged_config['sites'] = full_sites
-                with open(merged_config_path, 'w', encoding='utf-8') as f:
-                    json.dump(merged_config, f, ensure_ascii=False, indent=2)
-                print(f"  ✓ Merged config: {merged_config_path} ({len(full_sites)} sites)")
-            else:
-                print(f"  ✓ Merged config: {merged_config_path} ({len(all_sites)} sites)")
-            
-            # Step 3: If --init-custom, create custom/ with premium config
-            if init_custom:
-                print("\n" + "=" * 60)
-                print("Step: Initializing custom/ with premium config...")
-                print("=" * 60)
-                
-                # Import premium config constants
-                try:
-                    from core.create_premium_config import (
-                        AD_FILTERS, DOH_CONFIG, IJK_CONFIG, PARSERS, PLAY_RULES, FLAGS
-                    )
-                except ImportError as e:
-                    print(f"  ✗ 无法导入配置模块: {e}")
-                    sys.exit(1)
-                
-                # 豆瓣热搜站点
-                douban_site = {
-                    "key": "豆瓣热搜",
-                    "name": "🔥 豆瓣热搜",
-                    "type": 3,
-                    "api": "./js/douban_hot.js",
-                    "searchable": 1,
-                    "quickSearch": 1,
-                    "filterable": 0,
-                    "changeable": 0
-                }
-                
-                # 创建 premium 配置
-                custom_config = {
-                    "spider": "",
-                    "wallpaper": "https://picsum.photos/1280/720/?blur=2",
-                    "sites": [douban_site] + api_sites,
-                    "parses": PARSERS,
-                    "lives": [],
-                    "doh": DOH_CONFIG,
-                    "ads": AD_FILTERS,
-                    "ijk": IJK_CONFIG,
-                    "rules": PLAY_RULES,
-                    "flags": FLAGS
-                }
-                
-                # 保存到 custom/
-                custom_dir = Path("custom")
-                custom_dir.mkdir(exist_ok=True)
-                custom_path = custom_dir / "config.json"
-                
-                with open(custom_path, 'w', encoding='utf-8') as f:
-                    json.dump(custom_config, f, ensure_ascii=False, indent=2)
-                
-                print(f"  ✓ Custom config: {custom_path}")
-                print(f"    - 站点数: {len(custom_config['sites'])} (1 豆瓣 + {len(api_sites)} API)")
-                print(f"    - 广告过滤规则: {len(AD_FILTERS)}")
-                print(f"    - DoH DNS: {len(DOH_CONFIG)}")
-                print(f"    - 解析器: {len(PARSERS)}")
-        
-        print("\nBuild completed successfully!")
-        if init_custom:
-            print("可直接发布 custom/ 目录到 GitHub Pages")
+        print("\nBuild/Extraction completed successfully!")
         sys.exit(0)
         
     except Exception as e:
@@ -425,11 +297,7 @@ def main():
     parser_build = subparsers.add_parser('build', help='Build deployment package from online sources')
     parser_build.add_argument('--config', help='Path to source config file (default: config.json)')
     parser_build.add_argument('--output', default='smart_output', help='Output directory (default: smart_output)')
-    parser_build.add_argument('--max-sites', type=int, default=100, help='Maximum number of sites to include (default: 100)')
-    parser_build.add_argument('--min-score', type=int, default=30, help='Minimum quality score for sites (default: 30)')
-    parser_build.add_argument('--skip-plugins', action='store_true', help='Skip plugin download (faster build)')
-    parser_build.add_argument('--include-cloud', action='store_true', help='Include Cloud/Pan sites in merged config')
-    parser_build.add_argument('--init-custom', action='store_true', help='Initialize custom/ with API sites and premium config')
+    parser_build.add_argument('--include-cloud', action='store_true', help='Include Cloud/Pan sites in the config (default is to remove them)')
     
     # Clean Command
     parser_clean = subparsers.add_parser('clean', help='Remove temporary files')

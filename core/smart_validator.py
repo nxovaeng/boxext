@@ -323,10 +323,17 @@ class SmartValidator:
             # 构建完整 URL
             plugin_url = api if api.startswith('http') else urljoin(base_url, api)
             
-            # 下载插件
-            file_ext = '.js' if site_type == 'js' else '.py'
+            sub_dir = 'js' if site_type == 'js' else 'py'
             safe_key = re.sub(r'[^\w\-]', '_', key)
-            output_path = download_dir / f"{safe_key}{file_ext}"
+            
+            # 尽量保持原文件名
+            parsed_api = urlparse(plugin_url)
+            filename = Path(parsed_api.path).name
+            if not filename or not (filename.endswith('.js') or filename.endswith('.py')):
+                file_ext = '.js' if site_type == 'js' else '.py'
+                filename = f"{safe_key}{file_ext}"
+                
+            output_path = download_dir / sub_dir / filename
             
             success, content = self.download_plugin(plugin_url, output_path)
             
@@ -371,11 +378,10 @@ class SmartValidator:
                     print(f"    ✓ {info['reason']}")
             
                 # [CRITICAL] Rewrite config to point to local file (Enable Subdirectory Support)
-                rel_path = f"./plugins/{output_path.name}"
+                rel_path = f"./{sub_dir}/{filename}"
                 site['api'] = rel_path
                 
-                if site.get('ext') == api:
-                     site['ext'] = rel_path
+                # We will handle generic ext extraction later
                  
             else:
                 info['valid'] = False
@@ -405,11 +411,16 @@ class SmartValidator:
                     # 移除 md5 后缀
                     if ';md5;' in jar_url:
                         jar_url = jar_url.split(';md5;')[0]
-                    
+                        
                     jar_url = jar_url if jar_url.startswith('http') else urljoin(base_url, jar_url)
                     
                     safe_key = re.sub(r'[^\w\-]', '_', key)
-                    output_path = download_dir / 'jar' / f"{safe_key}.jar"
+                    jar_parsed = urlparse(jar_url)
+                    jar_name = Path(jar_parsed.path).name
+                    if not jar_name.endswith('.jar'):
+                        jar_name = f"{safe_key}.jar"
+                    
+                    output_path = download_dir / 'jar' / jar_name
                     
                     success, content = self.download_plugin(jar_url, output_path)
                     
@@ -419,7 +430,7 @@ class SmartValidator:
                         print(f"    ✓ {info['reason']}")
                         
                         # [CRITICAL] Rewrite config to point to local JAR
-                        rel_jar_path = f"./plugins/jar/{output_path.name}"
+                        rel_jar_path = f"./jar/{output_path.name}"
                         site['jar'] = rel_jar_path
 
                     else:
@@ -431,10 +442,77 @@ class SmartValidator:
             info['valid'] = False
             info['reason'] = "未知类型"
             print(f"    ✗ {info['reason']}")
+            
+        # 统一处理附加内容的本地化
+        if info['valid']:
+            safe_key = re.sub(r'[^\w\-]', '_', key)
+            
+            # 1. ext 文件本地化
+            ext_val = site.get('ext')
+            if isinstance(ext_val, str) and (ext_val.startswith('./') or ext_val.startswith('../')):
+                try:
+                    ext_url = urljoin(base_url, ext_val)
+                        
+                    parsed_ext = urlparse(ext_url)
+                    ext_fn = Path(parsed_ext.path).name
+                    if not ext_fn:
+                        ext_fn = f"{safe_key}_ext.txt"
+                    
+                    # 根据后缀选择目录
+                    if ext_fn.endswith('.js'):
+                        ext_sub = 'js'
+                    elif ext_fn.endswith('.py'):
+                        ext_sub = 'py'
+                    else:
+                        ext_sub = 'ext'
+                    
+                    # 下载文件
+                    ext_out = download_dir / ext_sub / ext_fn
+                    success_ext, _ = self.download_plugin(ext_url, ext_out)
+                    if success_ext:
+                        site['ext'] = f"./{ext_sub}/{ext_fn}"
+                    else:
+                        print(f"    ✗ ext 下载失败，移除相关站点")
+                        info['valid'] = False
+                        info['reason'] = "ext 文件下载失败或 404"
+                except Exception as e:
+                    print(f"    ✗ ext 处理异常，移除相关站点: {e}")
+                    info['valid'] = False
+                    info['reason'] = "ext 文件处理异常"
+                    
+            # 2. jar 文件本地化 (任何依赖独立 jar 的站)
+            if info['valid']:
+                jar_val = site.get('jar')
+                if isinstance(jar_val, str) and (jar_val.startswith('http') or jar_val.startswith('./') or jar_val.startswith('../') or jar_val.startswith('//')):
+                    try:
+                        clean_jar = jar_val.split(';md5;')[0] if ';md5;' in jar_val else jar_val
+                        if clean_jar.startswith('//'):
+                            jar_url = 'https:' + clean_jar
+                        elif clean_jar.startswith('./') or clean_jar.startswith('../'):
+                            jar_url = urljoin(base_url, clean_jar)
+                        else:
+                            jar_url = clean_jar
+                            
+                        parsed_jar = urlparse(jar_url)
+                        jar_fn = Path(parsed_jar.path).name
+                        if not jar_fn.endswith('.jar'):
+                            jar_fn = f"{safe_key}.jar"
+                        jar_out = download_dir / 'jar' / jar_fn
+                        success_jar, _ = self.download_plugin(jar_url, jar_out)
+                        if success_jar:
+                            site['jar'] = f"./jar/{jar_fn}"
+                        else:
+                            print(f"    ✗ 附加 jar 下载失败，移除相关站点")
+                            info['valid'] = False
+                            info['reason'] = "jar 文件下载失败或 404"
+                    except Exception as e:
+                        print(f"    ✗ 网盘或附加 jar 处理异常，移除相关站点: {e}")
+                        info['valid'] = False
+                        info['reason'] = "jar 文件处理异常"
         
         return info['valid'], info
     
-    def validate_config(self, config_url: str, output_dir: Path) -> dict:
+    def validate_config(self, config_url: str, output_dir: Path, exclude_cloud: bool = False) -> dict:
         """
         验证完整配置
         返回: 验证报告
@@ -454,8 +532,8 @@ class SmartValidator:
         
         # 创建输出目录
         output_dir.mkdir(parents=True, exist_ok=True)
-        download_dir = output_dir / 'plugins'
-        download_dir.mkdir(exist_ok=True)
+        download_dir = output_dir
+
         
         # 验证站点
         sites = config.get('sites', [])
@@ -465,7 +543,26 @@ class SmartValidator:
         invalid_sites = []
         validation_details = []
         
+        cloud_patterns = ['pan', 'share', 'wogg', 'wobg', 'moli', '阿里', '夸克', '网盘', 'alist']
+        
         for site in sites:
+            if exclude_cloud:
+                name_lower = site.get('name', '').lower()
+                api_lower = site.get('api', '').lower()
+                if any(p in name_lower or p in api_lower for p in cloud_patterns):
+                    invalid_sites.append(site)
+                    info = {
+                        'key': site.get('key', ''),
+                        'name': site.get('name', 'unknown'),
+                        'type': self.classify_site(site),
+                        'valid': False,
+                        'reason': '云盘/网盘源已被排除'
+                    }
+                    validation_details.append(info)
+                    print(f"  验证: {info['name']} ({info['type']})")
+                    print(f"    ✗ {info['reason']}")
+                    continue
+            
             valid, info = self.validate_site(site, base_url, download_dir)
             validation_details.append(info)
             
@@ -486,8 +583,27 @@ class SmartValidator:
                      if isinstance(live, dict) and live.get('url', '').startswith('http')]
         }
         
+        # 下载全局 spider jar
+        spider_url = config.get('spider', '')
+        if spider_url:
+            clean_spider_url = spider_url.split(';md5;')[0] if ';md5;' in spider_url else spider_url
+            if clean_spider_url.startswith('http') or clean_spider_url.startswith('//'):
+                if clean_spider_url.startswith('//'):
+                    clean_spider_url = 'https:' + clean_spider_url
+                print(f"  下载全局 Spider JAR: {clean_spider_url}")
+                spider_path = download_dir / 'jar' / 'spider.jar'
+                success, content = self.download_plugin(clean_spider_url, spider_path)
+                if success:
+                    clean_config['spider'] = './jar/spider.jar'
+                    print("    ✓ 全局 Spider 下载成功")
+                else:
+                    print("    ✗ 全局 Spider 下载失败，保留原连接")
+                    clean_config['spider'] = spider_url
+            else:
+                clean_config['spider'] = spider_url
+        
         # 保存清理后的配置
-        clean_config_path = output_dir / 'config_clean.json'
+        clean_config_path = output_dir / 'config.json'
         with open(clean_config_path, 'w', encoding='utf-8') as f:
             json.dump(clean_config, f, ensure_ascii=False, indent=2)
         

@@ -19,16 +19,17 @@ def load_source_config(config_path: str = "config.json") -> dict:
         return json.load(f)
 
 def smart_build(config_path: str = "config.json", output_dir: str = "smart_output",
-                max_sites: int = 100, min_score: int = 30, skip_plugins: bool = False):
-    """智能构建流程
+                exclude_cloud: bool = True):
+    """智能配置验证与分源保存流程
     
     Args:
         config_path: 源配置文件路径 (default: config.json)
         output_dir: 输出目录 (default: smart_output)
+        exclude_cloud: 是否排除网盘及依赖网盘的站点
     """
     
     print("=" * 70)
-    print("TVBox 智能构建系统")
+    print("TVBox 智能配置分源提取系统")
     print("=" * 70)
     print()
     
@@ -53,16 +54,9 @@ def smart_build(config_path: str = "config.json", output_dir: str = "smart_outpu
     output_base.mkdir(exist_ok=True)
     
     # 3. 验证每个源
-    print(f"\n步骤 2: 验证和下载源...")
+    print(f"\n步骤 2: 验证并下载每个源...")
     
     validator = SmartValidator(timeout=15, max_workers=5)
-    
-    all_valid_sites = []
-    all_parses = []
-    all_lives = []
-    
-    seen_site_keys = set()
-    seen_parse_names = set()
     
     source_reports = []
     
@@ -74,219 +68,22 @@ def smart_build(config_path: str = "config.json", output_dir: str = "smart_outpu
             print(f"\n跳过 {name}: 没有 URL")
             continue
         
-        # 为每个源创建输出目录
+        # 为每个源创建独立的输出目录
         source_output = output_base / name
         
-        # 验证源
-        report = validator.validate_config(url, source_output)
+        # 验证源并剥离失效或网盘资源
+        report = validator.validate_config(url, source_output, exclude_cloud=exclude_cloud)
         source_reports.append({
             'name': name,
             'url': url,
             'report': report
         })
-        
-        # 读取清理后的配置
-        clean_config_path = source_output / 'config_clean.json'
-        if clean_config_path.exists():
-            with open(clean_config_path, 'r', encoding='utf-8') as f:
-                clean_config = json.load(f)
-            
-            # 合并站点（去重）
-            for site in clean_config.get('sites', []):
-                key = site.get('key')
-                if key and key not in seen_site_keys:
-                    all_valid_sites.append(site)
-                    seen_site_keys.add(key)
-            
-            # 合并解析器（去重）
-            for parse in clean_config.get('parses', []):
-                name_key = parse.get('name')
-                if name_key and name_key not in seen_parse_names:
-                    all_parses.append(parse)
-                    seen_parse_names.add(name_key)
-            
-            # 合并直播源
-            for live in clean_config.get('lives', []):
-                if isinstance(live, dict):
-                    all_lives.append(live)
     
-    # 3.5 智能筛选高质量站点
-    print(f"\n步骤 3: 智能筛选站点...")
-    print(f"  原始站点数: {len(all_valid_sites)}")
-    
-    # 对所有站点评分
-    rated_sites = []
-    for site in all_valid_sites:
-        rating = rate_site(site, allow_cloud=False)
-        rated_sites.append({
-            'site': site,
-            'score': rating['score'],
-            'reasons': rating['reasons'],
-            'category': rating['category']
-        })
-    
-    # 按分数排序
-    rated_sites.sort(key=lambda x: x['score'], reverse=True)
-    
-    # 筛选高分站点
-    filtered_sites = [
-        rs['site'] for rs in rated_sites
-        if rs['score'] >= min_score
-    ][:max_sites]
-    
-    # 统计筛选结果
-    category_stats = {}
-    for rs in rated_sites[:max_sites]:
-        cat = rs['category']
-        category_stats[cat] = category_stats.get(cat, 0) + 1
-    
-    print(f"  筛选后站点数: {len(filtered_sites)} (最低分: {min_score}, 最多: {max_sites})")
-    for cat, count in category_stats.items():
-        print(f"    - {cat}: {count}")
-    
-    # 使用筛选后的站点
-    all_valid_sites = filtered_sites
-    
-    # 4. 生成合并配置
-    print(f"\n步骤 4: 生成合并配置...")
-    
-    # Helper function to normalize plugin paths
-    def normalize_plugin_path(path):
-        """Rewrite plugin paths to match our output directory structure"""
-        if not path or not isinstance(path, str):
-            return path
-        
-        # Handle relative paths like "./plugins/xxx.js" or "./lib/xxx.js"
-        import re
-        
-        # Extract filename from various path formats
-        if '.js' in path:
-            # ./plugins/xxx.js -> ./js/xxx.js
-            match = re.search(r'([^/]+\.js)$', path)
-            if match:
-                return f'./js/{match.group(1)}'
-        elif '.py' in path:
-            # ./plugins/xxx.py -> ./py/xxx.py
-            match = re.search(r'([^/]+\.py)$', path)
-            if match:
-                return f'./py/{match.group(1)}'
-        elif '.jar' in path:
-            # ./plugins/jar/xxx.jar -> ./jar/xxx.jar
-            match = re.search(r'([^/]+\.jar)$', path)
-            if match:
-                return f'./jar/{match.group(1)}'
-        
-        return path
-    
-    # Normalize paths in all sites
-    normalized_sites = []
-    for site in all_valid_sites:
-        site_copy = site.copy()
-        
-        # Normalize api path
-        if 'api' in site_copy:
-            api = site_copy['api']
-            if isinstance(api, str) and ('.js' in api or '.py' in api):
-                site_copy['api'] = normalize_plugin_path(api)
-        
-        # Normalize ext path if it's a string containing plugin reference
-        if 'ext' in site_copy:
-            ext = site_copy['ext']
-            if isinstance(ext, str) and ('.js' in ext or '.py' in ext):
-                site_copy['ext'] = normalize_plugin_path(ext)
-        
-        # Normalize jar path
-        if 'jar' in site_copy:
-            jar = site_copy['jar']
-            if isinstance(jar, str) and '.jar' in jar:
-                site_copy['jar'] = normalize_plugin_path(jar)
-        
-        normalized_sites.append(site_copy)
-    
-    merged_config = {
-        'spider': '',
-        'wallpaper': './bgwall.jpg',
-        'sites': normalized_sites,
-        'parses': all_parses if all_parses else [
-            {
-                'name': '默认',
-                'type': 0,
-                'url': 'https://jx.xmflv.com/?url='
-            }
-        ],
-        'lives': all_lives
-    }
-    
-    # 保存合并配置
-    merged_dir = output_base / 'merged'
-    merged_dir.mkdir(exist_ok=True)
-    
-    merged_config_path = merged_dir / 'config.json'
-    with open(merged_config_path, 'w', encoding='utf-8') as f:
-        json.dump(merged_config, f, ensure_ascii=False, indent=2)
-    
-    print(f"  ✓ 合并配置已保存: {merged_config_path}")
-    print(f"  - 站点: {len(all_valid_sites)}")
-    print(f"  - 解析器: {len(all_parses)}")
-    print(f"  - 直播源: {len(all_lives)}")
-    
-    # 5. 复制插件文件到合并目录
-    total_files = 0
-    
-    if skip_plugins:
-        print(f"\n步骤 5: 跳过插件整理 (--skip-plugins)")
-    else:
-        print(f"\n步骤 5: 整理插件文件...")
-        
-        (merged_dir / 'js').mkdir(exist_ok=True)
-        (merged_dir / 'py').mkdir(exist_ok=True)
-        (merged_dir / 'jar').mkdir(exist_ok=True)
-        
-        for source_report in source_reports:
-            source_name = source_report['name']
-            source_dir = output_base / source_name / 'plugins'
-            
-            if source_dir.exists():
-                # 复制 JS 文件
-                for js_file in source_dir.glob('*.js'):
-                    dest = merged_dir / 'js' / js_file.name
-                    if not dest.exists():
-                        import shutil
-                        shutil.copy2(js_file, dest)
-                        total_files += 1
-                
-                # 复制 Python 文件
-                for py_file in source_dir.glob('*.py'):
-                    dest = merged_dir / 'py' / py_file.name
-                    if not dest.exists():
-                        import shutil
-                        shutil.copy2(py_file, dest)
-                        total_files += 1
-                
-                # 复制 JAR 文件
-                jar_dir = source_dir / 'jar'
-                if jar_dir.exists():
-                    for jar_file in jar_dir.glob('*.jar'):
-                        dest = merged_dir / 'jar' / jar_file.name
-                        if not dest.exists():
-                            import shutil
-                            shutil.copy2(jar_file, dest)
-                            total_files += 1
-        
-        print(f"  ✓ 已整理 {total_files} 个插件文件")
-    
-    # 6. 生成总报告
-    print(f"\n步骤 5: 生成总报告...")
+    # 4. 生成总报告
+    print(f"\n步骤 3: 生成总报告...")
     
     summary_report = {
-        'sources': source_reports,
-        'merged': {
-            'total_sites': len(all_valid_sites),
-            'total_parses': len(all_parses),
-            'total_lives': len(all_lives),
-            'total_files': total_files,
-            'config_path': str(merged_config_path)
-        }
+        'sources': source_reports
     }
     
     summary_path = output_base / 'build_summary.json'
@@ -294,18 +91,8 @@ def smart_build(config_path: str = "config.json", output_dir: str = "smart_outpu
         json.dump(summary_report, f, ensure_ascii=False, indent=2)
     
     # 生成 README
-    readme_content = f"""# TVBox 智能构建结果
-
-## 构建摘要
-
-- **总站点数**: {len(all_valid_sites)}
-- **解析器数**: {len(all_parses)}
-- **直播源数**: {len(all_lives)}
-- **插件文件**: {total_files}
-
-## 源验证结果
-
-"""
+    readme_content = f"# TVBox 配置分源验证结果\n\n"
+    readme_content += f"## 验证报告\n\n"
     
     for source_report in source_reports:
         name = source_report['name']
@@ -316,66 +103,44 @@ def smart_build(config_path: str = "config.json", output_dir: str = "smart_outpu
         readme_content += f"### {name}\n\n"
         readme_content += f"- URL: {source_report['url']}\n"
         readme_content += f"- 有效站点: {valid}/{total}\n"
-        readme_content += f"- 详细报告: `{name}/validation_report.json`\n\n"
+        readme_content += f"- 本地配置: `{name}/config.json`\n"
+        readme_content += f"- 验证报告: `{name}/validation_report.json`\n\n"
     
     readme_content += f"""
 ## 使用方法
 
+每个源都已经独立存放并包含了运行所需的插件（JS/JAR/PY）。已排除所有失效源和网盘配置。
+
 ### 本地测试
 
 ```bash
-cd {merged_dir}
+cd {output_dir}
 python3 -m http.server 8000
 ```
 
-访问: `http://localhost:8000/config.json`
+访问各个分源配置，例如：`http://localhost:8000/源名称/config.json`
 
 ### 部署
 
-将 `{merged_dir}` 目录部署到任意 HTTP 服务器。
-
-### 在 TVBox 中使用
-
-配置地址: `http://your-domain/config.json`
-
-## 目录结构
-
-```
-{merged_dir}/
-├── config.json      # 主配置文件
-├── js/              # JavaScript 插件
-├── py/              # Python 插件
-└── jar/             # JAR 插件
-```
-
-## 注意事项
-
-1. 所有站点都经过验证，只保留有效的
-2. 插件文件已下载并分析
-3. 定期重新构建以更新配置
+将整个 `{output_dir}` 目录部署到任意 HTTP 服务器或 GitHub Pages。
 """
     
-    readme_path = merged_dir / 'README.md'
+    readme_path = output_base / 'README.md'
     with open(readme_path, 'w', encoding='utf-8') as f:
         f.write(readme_content)
     
     print(f"  ✓ 总报告已保存: {summary_path}")
     print(f"  ✓ README 已生成: {readme_path}")
     
-    # 7. 打印最终摘要
+    # 5. 打印最终摘要
     print(f"\n{'='*70}")
-    print("构建完成！")
+    print("验证与提取完成！")
     print(f"{'='*70}")
     print(f"\n输出目录: {output_base}/")
-    print(f"\n推荐使用: {merged_dir}/")
-    print(f"  - 配置文件: {merged_config_path}")
-    print(f"  - 站点数: {len(all_valid_sites)}")
-    print(f"  - 插件文件: {total_files}")
     
     print(f"\n下一步:")
-    print(f"  1. 测试: cd {merged_dir} && python3 -m http.server 8000")
-    print(f"  2. 部署到服务器")
-    print(f"  3. 在 TVBox 中使用")
+    print(f"  1. 测试: cd {output_base} && python3 -m http.server 8000")
+    print(f"  2. 将输出目录部署到服务器。各个分源可独立使用！")
     
     return 0
 

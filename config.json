@@ -2,34 +2,20 @@
   "sources": [
     {
       "name": "qist-jsm",
-      "url": "https://qist.wyfc.qzz.io/jsm.json",
-      "description": "qist jsm 配置",
+      "url": "https://raw.githubusercontent.com/qist/tvbox/master/jsm.json",
+      "description": "qist",
       "enabled": true
     },
     {
       "name": "qist-xiaosa",
-      "url": "https://raw.githubusercontent.com/qist/tvbox/refs/heads/master/xiaosa/api.json",
-      "description": "qist xiaosa API 配置",
-      "enabled": true
+      "url": "https://raw.githubusercontent.com/qist/tvbox/master/xiaosa/api.json",
+      "description": "qist xiaosa",
+      "enabled": false
     },
     {
       "name": "cluntop-box",
       "url": "https://clun.top/box.json",
-      "description": "cluntop box 配置",
-      "enabled": true
-    }
-  ],
-  "local_sources": [
-    {
-      "name": "qist-js-local",
-      "path": "../qist-tvbox/js.json",
-      "description": "qist 本地 js 配置",
-      "enabled": false
-    },
-    {
-      "name": "cluntop-box-local",
-      "path": "../cluntop-tvbox/box.json",
-      "description": "cluntop 本地 box 配置",
+      "description": "cluntop box",
       "enabled": false
     }
   ],
